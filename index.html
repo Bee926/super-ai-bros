@@ -5,546 +5,480 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Super AI Bros — Health Quest</title>
   <style>
-    :root {
-      --panel: rgba(0,0,0,0.72);
-      --border: rgba(255,255,255,0.9);
-      --shadow: 0 16px 50px rgba(0,0,0,0.45);
+    :root{
+      --bg:#0b1020;
+      --panel:rgba(0,0,0,0.72);
+      --border:rgba(255,255,255,0.92);
+      --shadow:0 18px 60px rgba(0,0,0,0.5);
+      --red:#ef4444;
+      --green:#22c55e;
+      --yellow:#eab308;
+      --blue:#3b82f6;
     }
-
-    html, body {
-      margin: 0;
-      height: 100%;
-      background: #0b1020;
-      color: #fff;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-    }
-
-    /* Center the game nicely on desktop */
-    .wrap {
-      min-height: 100%;
-      display: grid;
-      place-items: center;
-      padding: 24px;
-    }
-
-    .stage {
-      position: relative;
-      width: 800px;
-      max-width: calc(100vw - 32px);
+    html,body{height:100%;margin:0;background:var(--bg);color:#fff;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;}
+    .wrap{min-height:100%;display:grid;place-items:center;padding:24px;}
+    .stage{
+      position:relative;
+      width:min(900px, calc(100vw - 32px));
       aspect-ratio: 800 / 450;
-      box-shadow: var(--shadow);
-      border: 2px solid rgba(255,255,255,0.15);
-      border-radius: 14px;
-      overflow: hidden;
-      background: #111;
+      border-radius:16px;
+      overflow:hidden;
+      box-shadow:var(--shadow);
+      border:1px solid rgba(255,255,255,0.15);
+      background:#111;
     }
-
-    canvas {
-      width: 100%;
-      height: 100%;
-      display: block;
-      image-rendering: pixelated;
-      background: #5c94fc;
+    canvas{width:100%;height:100%;display:block;image-rendering:pixelated;}
+    .ui{position:absolute;inset:0;pointer-events:none;}
+    .screen{
+      position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+      background:rgba(0,0,0,0.62);
+      z-index:40;text-align:center;padding:18px;
     }
-
-    /* UI overlay layer */
-    .ui-layer {
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
+    .hidden{display:none !important;}
+    .retro{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono",monospace;letter-spacing:0.06em;text-transform:uppercase;}
+    .panel{background:rgba(0,0,0,0.82);border:2px solid var(--border);padding:14px 16px;max-width:640px;}
+    h1{margin:0 0 14px;line-height:1.05;}
+    .title{font-size:44px;}
+    .sub{display:block;margin-top:10px;font-size:22px;color:var(--red);}
+    .hint{margin-top:12px;font-size:12px;opacity:0.85;max-width:560px;}
+    .btn{
+      pointer-events:auto;cursor:pointer;border:none;border-radius:12px;
+      padding:14px 18px;font-weight:900;
+      border-bottom:8px solid rgba(0,0,0,0.35);
+      transform:translateY(0);
+      transition:transform 0.08s ease,border-bottom-width 0.08s ease,filter 0.08s ease;
     }
-
-    .screen {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      z-index: 40;
-      background: rgba(0,0,0,0.6);
-      text-align: center;
-      padding: 18px;
+    .btn:active{border-bottom-width:0;transform:translateY(6px);}
+    .btn-red{background:#dc2626;color:#fff;}
+    .btn-green{background:#16a34a;color:#fff;}
+    .btn-yellow{background:#f59e0b;color:#111;border-bottom:4px solid rgba(0,0,0,0.35);padding:8px 12px;border-radius:10px;font-size:10px;}
+    .btn-blue{background:#2563eb;color:#fff;border-bottom:4px solid rgba(0,0,0,0.35);padding:8px 12px;border-radius:10px;font-size:10px;}
+    .btn:hover{filter:brightness(1.08);}
+    #hud{
+      position:absolute;inset:0;padding:18px;z-index:30;display:flex;flex-direction:column;gap:12px;
+      pointer-events:none;
     }
-
-    .hidden { display: none !important; }
-
-    .panel {
-      background: rgba(0,0,0,0.8);
-      border: 2px solid var(--border);
-      padding: 14px 16px;
-      max-width: 560px;
-    }
-
-    .retro-text {
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-    }
-
-    h1 {
-      margin: 0 0 18px;
-      line-height: 1.1;
-    }
-
-    .title-big { font-size: 44px; }
-    .title-sub { font-size: 22px; color: #ef4444; margin-top: 10px; }
-
-    .btn {
-      pointer-events: auto;
-      cursor: pointer;
-      border: none;
-      padding: 14px 18px;
-      font-weight: 800;
-      border-bottom: 8px solid rgba(0,0,0,0.35);
-      transform: translateY(0);
-      transition: transform 0.08s ease, border-bottom-width 0.08s ease, filter 0.08s ease;
-      border-radius: 10px;
-    }
-    .btn:active {
-      border-bottom-width: 0px;
-      transform: translateY(6px);
-    }
-    .btn-red { background: #dc2626; color: #fff; }
-    .btn-red:hover { filter: brightness(1.08); }
-    .btn-green { background: #16a34a; color: #fff; }
-    .btn-green:hover { filter: brightness(1.08); }
-    .btn-yellow { background: #f59e0b; color: #111; padding: 8px 12px; border-bottom: 4px solid rgba(0,0,0,0.35); border-radius: 8px; font-size: 10px; }
-    .btn-blue { background: #2563eb; color: #fff; padding: 8px 12px; border-bottom: 4px solid rgba(0,0,0,0.35); border-radius: 8px; font-size: 10px; }
-
-    /* HUD */
-    #hud {
-      position: absolute;
-      inset: 0;
-      padding: 18px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      z-index: 30;
-      pointer-events: none;
-    }
-
-    .hud-top {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 18px;
-    }
-
-    .hud-col {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .hp-wrap {
-      width: 260px;
-      max-width: 45vw;
-      border: 4px solid #fff;
-      height: 22px;
-      background: #1f2937;
-    }
-
-    #hp-bar {
-      height: 100%;
-      width: 100%;
-      background: #22c55e;
-      transition: width 0.25s ease;
-    }
-
-    .narrative-center {
-      display: flex;
-      justify-content: center;
-      margin-top: 6px;
-    }
-
-    #narrative-box {
-      background: rgba(0,0,0,0.6);
-      border: 2px solid #fff;
-      padding: 10px 12px;
-      max-width: 560px;
-    }
-
-    #narrative-text {
-      margin: 0;
-      font-size: 11px;
-      line-height: 1.5;
-      text-align: center;
-      opacity: 0.95;
-    }
-
-    /* Mobile helper */
-    .hint {
-      margin-top: 12px;
-      font-size: 12px;
-      opacity: 0.85;
-      max-width: 520px;
-    }
+    .hudTop{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;}
+    .col{display:flex;flex-direction:column;gap:8px;}
+    .hpWrap{width:280px;max-width:46vw;height:22px;border:4px solid #fff;background:#1f2937;}
+    #hpBar{height:100%;width:100%;background:var(--green);transition:width 0.25s ease;}
+    .centerRow{display:flex;justify-content:center;margin-top:6px;}
+    #narrBox{background:rgba(0,0,0,0.6);border:2px solid #fff;padding:10px 12px;max-width:640px;}
+    #narrText{margin:0;font-size:11px;line-height:1.5;text-align:center;opacity:0.95;}
+    .badge{font-size:14px;}
+    .score{font-size:28px;}
+    .pulse{animation:pulse 1s infinite;}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.55}}
   </style>
 </head>
-
 <body>
   <div class="wrap">
     <div class="stage">
-      <canvas id="gameCanvas" width="800" height="450"></canvas>
+      <canvas id="game" width="800" height="450"></canvas>
 
-      <div id="ui-layer" class="ui-layer">
-        <!-- Start Menu -->
-        <div id="menu-screen" class="screen">
-          <h1 class="retro-text title-big">
-            SUPER AI BROS<br/>
-            <span class="title-sub">HEALTH QUEST</span>
+      <div class="ui">
+        <!-- MENU -->
+        <div id="menu" class="screen">
+          <h1 class="retro title">
+            SUPER AI BROS
+            <span class="sub">HEALTH QUEST</span>
           </h1>
 
-          <div class="panel retro-text" style="margin-bottom:18px;">
-            <div style="font-size:11px; line-height:1.8;">
+          <div class="panel retro" style="margin-bottom:18px;">
+            <div style="font-size:11px;line-height:1.8;">
               - ARROWS / WASD TO MOVE -<br/>
               - SPACE / W / UP TO JUMP -<br/>
-              - JUMP ON FOES TO STOMP! -<br/>
+              - STOMP FOES FROM ABOVE -<br/>
               - COINS = HP + POINTS -
             </div>
           </div>
 
-          <button id="start-btn" class="btn btn-red retro-text" style="font-size:18px;">
-            PRESS START
-          </button>
-
+          <button id="startBtn" class="btn btn-red retro" style="font-size:18px;">PRESS START</button>
           <div class="hint">
-            Tip: if you’re on a laptop, click the game area first so keys go to the game.
+            Tip: click the game once so your keyboard controls it.
           </div>
         </div>
 
         <!-- HUD -->
         <div id="hud" class="hidden">
-          <div class="hud-top">
-            <div class="hud-col">
-              <div class="retro-text" style="font-size:14px;">MARIO-AI</div>
-              <div id="score-val" class="retro-text" style="font-size:26px;">000000</div>
-              <button id="restart-hud-btn" class="btn btn-yellow retro-text" style="width: fit-content;">
-                RESTART
-              </button>
+          <div class="hudTop">
+            <div class="col">
+              <div class="retro badge">MARIO-AI</div>
+              <div id="scoreEl" class="retro score">000000</div>
+              <button id="restartBtn" class="btn btn-yellow retro" style="width:fit-content;">RESTART</button>
             </div>
 
-            <div class="hud-col" style="align-items:flex-end;">
-              <div id="hp-text" class="retro-text" style="font-size:14px;">HEALTH: 100%</div>
-              <div class="hp-wrap">
-                <div id="hp-bar"></div>
-              </div>
-              <button id="ai-reply-btn" class="btn btn-blue retro-text" style="width: fit-content;">
-                AI REPLY
-              </button>
+            <div class="col" style="align-items:flex-end;">
+              <div id="hpEl" class="retro badge">HEALTH: 100%</div>
+              <div class="hpWrap"><div id="hpBar"></div></div>
+              <button id="aiBtn" class="btn btn-blue retro" style="width:fit-content;">AI REPLY</button>
             </div>
           </div>
 
-          <div class="narrative-center">
-            <div id="narrative-box" class="hidden">
-              <p id="narrative-text" class="retro-text"></p>
+          <div class="centerRow">
+            <div id="narrBox" class="hidden">
+              <p id="narrText" class="retro"></p>
             </div>
           </div>
         </div>
 
-        <!-- Game Over -->
-        <div id="gameover-screen" class="screen hidden" style="background: rgba(0,0,0,0.9); z-index:50;">
-          <h1 class="retro-text" style="color:#ef4444; font-size:56px; margin-bottom:24px;">
-            GAME OVER
-          </h1>
-          <button id="retry-btn" class="btn btn-green retro-text" style="font-size:22px;">
-            RESTART
-          </button>
+        <!-- GAME OVER -->
+        <div id="over" class="screen hidden" style="background:rgba(0,0,0,0.88);z-index:50;">
+          <h1 class="retro pulse" style="color:var(--red);font-size:56px;margin-bottom:20px;">GAME OVER</h1>
+          <div class="panel retro" style="margin-bottom:18px;">
+            <div style="font-size:12px;line-height:1.6;">
+              Final Score: <span id="finalScore">000000</span><br/>
+              You got mushroom'd. It happens.
+            </div>
+          </div>
+          <button id="retryBtn" class="btn btn-green retro" style="font-size:22px;">RESTART</button>
         </div>
       </div>
     </div>
   </div>
 
   <script>
-    // Constants
-    const CANVAS_WIDTH = 800;
-    const CANVAS_HEIGHT = 450;
+    // --- Canvas setup ---
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+
+    // --- UI ---
+    const menu = document.getElementById('menu');
+    const hud = document.getElementById('hud');
+    const over = document.getElementById('over');
+    const scoreEl = document.getElementById('scoreEl');
+    const hpEl = document.getElementById('hpEl');
+    const hpBar = document.getElementById('hpBar');
+    const narrBox = document.getElementById('narrBox');
+    const narrText = document.getElementById('narrText');
+    const finalScoreEl = document.getElementById('finalScore');
+
+    const startBtn = document.getElementById('startBtn');
+    const restartBtn = document.getElementById('restartBtn');
+    const retryBtn = document.getElementById('retryBtn');
+    const aiBtn = document.getElementById('aiBtn');
+
+    // --- Game constants ---
+    const W = 800, H = 450;
     const GROUND_Y = 380;
     const GRAVITY = 0.8;
-    const JUMP_FORCE = -15;
-    const PLAYER_SPEED = 5;
-    const SPAWN_RATE_MUSHROOM = 0.01;
-    const SPAWN_RATE_COIN = 0.015;
-    const INITIAL_HEALTH = 100;
-    const COIN_HP_GAIN = 10;
-    const MUSHROOM_HP_LOSS = 25;
+    const JUMP = -15;
+    const SPEED = 5;
+
+    const COIN_HP = 10;
+    const HIT_HP = 25;
+
+    const SPAWN_MUSH = 0.012;
+    const SPAWN_COIN = 0.016;
+
     const COLORS = {
       sky: '#5c94fc',
       ground: '#885418',
+      grass: '#4daa42',
       player: '#ff0000',
       coin: '#ffcc00',
-      mushroom: '#8b008b',
+      mush: '#8b008b',
+      white: '#ffffff'
     };
 
-    // State
-    let gameState = 'MENU';
+    // --- State ---
+    let gameState = 'MENU'; // MENU | PLAY | OVER
     let score = 0;
-    let health = INITIAL_HEALTH;
+    let hp = 100;
     let frame = 0;
 
-    const state = {
-      player: {
-        x: 100,
-        y: GROUND_Y - 40,
-        width: 32,
-        height: 40,
-        vx: 0,
-        vy: 0,
-        isJumping: false
-      },
-      coins: [],
-      mushrooms: [],
-      clouds: [],
-      keys: {}
+    const keys = {};
+    const player = { x: 100, y: GROUND_Y-40, w: 32, h: 40, vx: 0, vy: 0, jumping: false };
+
+    let coins = [];
+    let mush = [];
+    let clouds = [];
+
+    // --- Simple audio (browser beeps) ---
+    let audioCtx = null;
+    function beep(type, f1, f2, dur, gain=0.12){
+      try{
+        if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if(audioCtx.state === 'suspended') audioCtx.resume();
+        const o = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        o.type = type;
+        o.frequency.setValueAtTime(f1, audioCtx.currentTime);
+        if(f2) o.frequency.exponentialRampToValueAtTime(f2, audioCtx.currentTime + dur*0.7);
+        g.gain.setValueAtTime(gain, audioCtx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + dur);
+        o.connect(g); g.connect(audioCtx.destination);
+        o.start(); o.stop(audioCtx.currentTime + dur);
+      }catch(_){}
+    }
+    const sfx = {
+      jump(){ beep('square', 220, 660, 0.12, 0.10); },
+      coin(){ beep('triangle', 988, 1319, 0.16, 0.10); },
+      stomp(){ beep('square', 160, 60, 0.10, 0.14); },
+      hit(){ beep('sawtooth', 150, 40, 0.22, 0.16); },
+      over(){ beep('square', 392, 262, 0.35, 0.10); }
     };
 
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
-
-    // Audio Manager (same as your original)
-    class AudioManager {
-      constructor() { this.ctx = null; }
-      init() {
-        if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-        if (this.ctx.state === 'suspended') this.ctx.resume();
-      }
-      createGain(start, duration) {
-        if (!this.ctx) return null;
-        const gain = this.ctx.createGain();
-        gain.gain.setValueAtTime(start, this.ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
-        gain.connect(this.ctx.destination);
-        return gain;
-      }
-      playJump() {
-        this.init();
-        const osc = this.ctx.createOscillator();
-        const gain = this.createGain(0.1, 0.15);
-        osc.type = 'square';
-        osc.frequency.setValueAtTime(200, this.ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(600, this.ctx.currentTime + 0.1);
-        osc.connect(gain); osc.start(); osc.stop(this.ctx.currentTime + 0.15);
-      }
-      playCoin() {
-        this.init();
-        const osc = this.ctx.createOscillator();
-        const gain = this.createGain(0.1, 0.2);
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(987.77, this.ctx.currentTime);
-        osc.frequency.setValueAtTime(1318.51, this.ctx.currentTime + 0.07);
-        osc.connect(gain); osc.start(); osc.stop(this.ctx.currentTime + 0.2);
-      }
-      playStomp() {
-        this.init();
-        const osc = this.ctx.createOscillator();
-        const gain = this.createGain(0.15, 0.1);
-        osc.type = 'square';
-        osc.frequency.setValueAtTime(150, this.ctx.currentTime);
-        osc.frequency.linearRampToValueAtTime(50, this.ctx.currentTime + 0.1);
-        osc.connect(gain); osc.start(); osc.stop(this.ctx.currentTime + 0.1);
-      }
-      playHit() {
-        this.init();
-        const osc = this.ctx.createOscillator();
-        const gain = this.createGain(0.2, 0.3);
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(150, this.ctx.currentTime);
-        osc.frequency.linearRampToValueAtTime(40, this.ctx.currentTime + 0.2);
-        osc.connect(gain); osc.start(); osc.stop(this.ctx.currentTime + 0.3);
-      }
-      playGameOver() {
-        this.init();
-        const playNote = (freq, start, dur) => {
-          const osc = this.ctx.createOscillator();
-          const gain = this.ctx.createGain();
-          gain.gain.setValueAtTime(0.1, start);
-          gain.gain.linearRampToValueAtTime(0, start + dur);
-          osc.type = 'square';
-          osc.frequency.setValueAtTime(freq, start);
-          osc.connect(gain);
-          gain.connect(this.ctx.destination);
-          osc.start(start);
-          osc.stop(start + dur);
-        };
-        const now = this.ctx.currentTime;
-        playNote(392.00, now, 0.2);
-        playNote(349.23, now + 0.2, 0.2);
-        playNote(329.63, now + 0.4, 0.2);
-        playNote(261.63, now + 0.6, 0.6);
-      }
-    }
-    const audio = new AudioManager();
-
-    // Offline “AI Narrator” (safe for GitHub Pages)
-    const offlineLines = {
+    // --- Offline "AI" lines ---
+    const lines = {
       start: [
-        "PRESS START. BECOME LEGEND.",
-        "WELCOME, HERO. EAT COINS. DODGE PAIN.",
-        "SYSTEM ONLINE. HEALTH QUEST INITIATED."
+        "SYSTEM ONLINE. HEALTH QUEST STARTED.",
+        "WELCOME HERO. STOMP = HONOR.",
+        "PRESS START. BECOME LEGEND."
       ],
       hurt: [
         "OW. THAT MUSHROOM IS NOT FRIEND-SHAPED.",
-        "POISON DETECTED. SKILL ISSUE? MAYBE.",
-        "YOU TOUCHED THE BAD PIXELS. RUN!"
+        "POISON DETECTED. RUN FASTER.",
+        "YOU TOUCHED THE BAD PIXELS."
       ],
       heal: [
-        "COIN ACQUIRED. HP RESTORED. VIBES UP.",
-        "SHINY! HEALTH BOOSTED. KEEP GOING.",
+        "COIN ACQUIRED. HP RESTORED.",
+        "SHINY! HEALTH UP. VIBES UP.",
         "YOU’RE RICH (IN COINS)."
       ],
-      gameover: [
+      over: [
         "GAME OVER. TRY TOUCHING FEWER MUSHROOMS.",
         "YOU HAVE DIED. BUT LIKE… WITH STYLE.",
-        "RESET? THE ARENA DEMANDS A REMATCH."
+        "RESET. THE ARENA DEMANDS A REMATCH."
       ]
     };
-
-    function showNarrative(text) {
-      const box = document.getElementById('narrative-box');
-      const txt = document.getElementById('narrative-text');
-      txt.innerText = text;
-      box.classList.remove('hidden');
-      setTimeout(() => box.classList.add('hidden'), 4500);
+    function pick(arr){ return arr[(Math.random()*arr.length)|0]; }
+    function showNarr(t){
+      narrText.textContent = t;
+      narrBox.classList.remove('hidden');
+      setTimeout(()=>narrBox.classList.add('hidden'), 4200);
     }
 
-    function pick(arr) {
-      return arr[Math.floor(Math.random() * arr.length)];
+    // --- UI helpers ---
+    function setHUD(){
+      scoreEl.textContent = String(score).padStart(6,'0');
+      hpEl.textContent = `HEALTH: ${Math.max(0, hp)}%`;
+      hpBar.style.width = `${Math.max(0, hp)}%`;
+      if(hp > 50) hpBar.style.background = getComputedStyle(document.documentElement).getPropertyValue('--green');
+      else if(hp > 25) hpBar.style.background = getComputedStyle(document.documentElement).getPropertyValue('--yellow');
+      else hpBar.style.background = getComputedStyle(document.documentElement).getPropertyValue('--red');
     }
 
-    function updateNarrative(type) {
-      // Offline mode (no key required)
-      const line = pick(offlineLines[type] || ["READY!"]);
-      showNarrative(line);
-    }
+    function resetGame(){
+      // ensure audio is allowed after click
+      if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
 
-    function resetGame() {
-      audio.init();
       score = 0;
-      health = INITIAL_HEALTH;
+      hp = 100;
       frame = 0;
-      gameState = 'PLAYING';
+      player.x = 100;
+      player.y = GROUND_Y - player.h;
+      player.vx = 0;
+      player.vy = 0;
+      player.jumping = false;
+      coins = [];
+      mush = [];
+      clouds = [];
 
-      state.player = {
-        x: 100,
-        y: GROUND_Y - 40,
-        width: 32,
-        height: 40,
-        vx: 0,
-        vy: 0,
-        isJumping: false
-      };
-      state.coins = [];
-      state.mushrooms = [];
-      state.clouds = [];
+      menu.classList.add('hidden');
+      over.classList.add('hidden');
+      hud.classList.remove('hidden');
 
-      document.getElementById('menu-screen').classList.add('hidden');
-      document.getElementById('gameover-screen').classList.add('hidden');
-      document.getElementById('hud').classList.remove('hidden');
-
-      updateHUD();
-      updateNarrative('start');
+      gameState = 'PLAY';
+      setHUD();
+      showNarr(pick(lines.start));
     }
 
-    function updateHUD() {
-      document.getElementById('score-val').innerText = score.toString().padStart(6, '0');
-      document.getElementById('hp-text').innerText = `HEALTH: ${Math.max(0, health)}%`;
-      const bar = document.getElementById('hp-bar');
-      bar.style.width = `${Math.max(0, health)}%`;
-
-      if (health > 50) bar.style.background = '#22c55e';
-      else if (health > 25) bar.style.background = '#eab308';
-      else bar.style.background = '#ef4444';
+    function gameOver(){
+      gameState = 'OVER';
+      hud.classList.add('hidden');
+      over.classList.remove('hidden');
+      finalScoreEl.textContent = String(score).padStart(6,'0');
+      sfx.over();
+      showNarr(pick(lines.over));
     }
 
-    // Input
-    window.addEventListener('keydown', (e) => state.keys[e.code] = true);
-    window.addEventListener('keyup', (e) => state.keys[e.code] = false);
+    // --- Input ---
+    window.addEventListener('keydown', (e)=>{ keys[e.code]=true; });
+    window.addEventListener('keyup', (e)=>{ keys[e.code]=false; });
 
-    document.getElementById('start-btn').onclick = resetGame;
-    document.getElementById('retry-btn').onclick = resetGame;
-    document.getElementById('restart-hud-btn').onclick = resetGame;
-    document.getElementById('ai-reply-btn').onclick = () => {
-      audio.init();
-      updateNarrative(health < 50 ? 'hurt' : 'heal');
+    startBtn.onclick = ()=>{ sfx.jump(); resetGame(); };
+    restartBtn.onclick = ()=>{ sfx.coin(); resetGame(); };
+    retryBtn.onclick = ()=>{ sfx.coin(); resetGame(); };
+    aiBtn.onclick = ()=>{
+      // fun "AI reply" without any API keys
+      if(gameState !== 'PLAY') return;
+      if(hp < 50) showNarr(pick(lines.hurt));
+      else showNarr(pick(lines.heal));
     };
 
-    function loop() {
-      if (gameState === 'PLAYING') update();
+    // --- Game loop ---
+    function loop(){
+      if(gameState === 'PLAY') update();
       draw();
       requestAnimationFrame(loop);
     }
 
-    function update() {
-      const { player, mushrooms, coins, clouds, keys } = state;
+    function update(){
       frame++;
 
-      // Movement
-      if (keys['ArrowLeft'] || keys['KeyA']) player.vx = -PLAYER_SPEED;
-      else if (keys['ArrowRight'] || keys['KeyD']) player.vx = PLAYER_SPEED;
+      // movement
+      if(keys['ArrowLeft'] || keys['KeyA']) player.vx = -SPEED;
+      else if(keys['ArrowRight'] || keys['KeyD']) player.vx = SPEED;
       else player.vx = 0;
 
-      if ((keys['Space'] || keys['ArrowUp'] || keys['KeyW']) && !player.isJumping) {
-        player.vy = JUMP_FORCE;
-        player.isJumping = true;
-        audio.playJump();
+      // jump
+      if((keys['Space'] || keys['ArrowUp'] || keys['KeyW']) && !player.jumping){
+        player.vy = JUMP;
+        player.jumping = true;
+        sfx.jump();
       }
 
+      // integrate
       player.x += player.vx;
       player.y += player.vy;
       player.vy += GRAVITY;
 
-      // Bounds
-      if (player.x < 0) player.x = 0;
-      if (player.x > CANVAS_WIDTH - player.width) player.x = CANVAS_WIDTH - player.width;
-      if (player.y > GROUND_Y - player.height) {
-        player.y = GROUND_Y - player.height;
+      // bounds
+      if(player.x < 0) player.x = 0;
+      if(player.x > W - player.w) player.x = W - player.w;
+
+      if(player.y > GROUND_Y - player.h){
+        player.y = GROUND_Y - player.h;
         player.vy = 0;
-        player.isJumping = false;
+        player.jumping = false;
       }
 
-      // Spawning
-      if (Math.random() < SPAWN_RATE_MUSHROOM) {
-        mushrooms.push({
-          x: CANVAS_WIDTH,
-          y: GROUND_Y - 32,
-          width: 32,
-          height: 32,
-          vx: -(2 + Math.random() * 3),
-          active: true
-        });
-      }
-      if (Math.random() < SPAWN_RATE_COIN) {
-        coins.push({
-          x: CANVAS_WIDTH,
-          y: GROUND_Y - 50 - Math.random() * 100,
-          width: 24,
-          height: 24,
-          active: true
-        });
-      }
-      if (frame % 100 === 0) {
-        clouds.push({ x: CANVAS_WIDTH, y: Math.random() * 150, speed: 0.5 + Math.random() });
+      // spawn clouds
+      if(frame % 100 === 0){
+        clouds.push({ x: W, y: Math.random()*150, sp: 0.5 + Math.random() });
       }
 
-      // Mushrooms
-      state.mushrooms = mushrooms.filter(m => {
+      // spawn entities
+      if(Math.random() < SPAWN_MUSH){
+        mush.push({ x: W, y: GROUND_Y - 32, w: 32, h: 32, vx: -(2 + Math.random()*3), active:true });
+      }
+      if(Math.random() < SPAWN_COIN){
+        coins.push({ x: W, y: GROUND_Y - 50 - Math.random()*110, w: 24, h: 24, active:true });
+      }
+
+      // update clouds
+      clouds = clouds.filter(c => (c.x -= c.sp) > -120);
+
+      // mushrooms update + collisions
+      mush = mush.filter(m=>{
         m.x += m.vx;
-        if (m.active && player.x < m.x + m.width && player.x + player.width > m.x &&
-            player.y < m.y + m.height && player.y + player.height > m.y) {
-
-          const isStomp = player.vy > 0 && (player.y + player.height) < (m.y + m.height * 0.7);
-
-          if (isStomp) {
+        if(m.active && aabb(player, m)){
+          const stomp = player.vy > 0 && (player.y + player.h) < (m.y + m.h*0.7);
+          if(stomp){
             m.active = false;
-            player.vy = JUMP_FORCE * 0.7;
+            player.vy = JUMP * 0.7;
             score += 500;
-            audio.playStomp();
-            updateHUD();
+            sfx.stomp();
+            setHUD();
             return false;
-          } else {
+          }else{
             m.active = false;
-            health -= MUSHROOM_HP_LOSS;
-            audio.playHit();
-            updateHUD();
-            updateNarrative('hurt
+            hp -= HIT_HP;
+            sfx.hit();
+            setHUD();
+            showNarr(pick(lines.hurt));
+            return false;
+          }
+        }
+        return m.x > -m.w;
+      });
+
+      // coins update + collisions
+      coins = coins.filter(c=>{
+        c.x -= 3;
+        if(c.active && aabb(player, c)){
+          c.active = false;
+          score += 100;
+          hp = Math.min(100, hp + COIN_HP);
+          sfx.coin();
+          setHUD();
+          if(Math.random() > 0.75) showNarr(pick(lines.heal));
+          return false;
+        }
+        return c.x > -c.w;
+      });
+
+      // death
+      if(hp <= 0) gameOver();
+    }
+
+    function aabb(a,b){
+      return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+    }
+
+    // --- Draw ---
+    function draw(){
+      // sky
+      ctx.fillStyle = COLORS.sky;
+      ctx.fillRect(0,0,W,H);
+
+      // clouds
+      ctx.fillStyle = COLORS.white;
+      for(const c of clouds){
+        ctx.beginPath();
+        ctx.arc(c.x, c.y, 20, 0, Math.PI*2);
+        ctx.arc(c.x+18, c.y-10, 20, 0, Math.PI*2);
+        ctx.arc(c.x+36, c.y, 20, 0, Math.PI*2);
+        ctx.fill();
+      }
+
+      // ground
+      ctx.fillStyle = COLORS.ground;
+      ctx.fillRect(0,GROUND_Y,W,H-GROUND_Y);
+      ctx.fillStyle = COLORS.grass;
+      ctx.fillRect(0,GROUND_Y,W,10);
+
+      if(gameState === 'MENU') return;
+
+      // coins
+      for(const c of coins){
+        ctx.fillStyle = COLORS.coin;
+        ctx.beginPath();
+        ctx.ellipse(c.x + c.w/2, c.y + c.h/2, c.w/2, c.h/2, 0, 0, Math.PI*2);
+        ctx.fill();
+        ctx.strokeStyle = COLORS.white;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+
+      // mushrooms
+      for(const m of mush){
+        // stem
+        ctx.fillStyle = COLORS.white;
+        ctx.fillRect(m.x+8, m.y+16, 16, 16);
+        // cap
+        ctx.fillStyle = COLORS.mush;
+        ctx.beginPath();
+        ctx.arc(m.x+16, m.y+12, 16, Math.PI, 0);
+        ctx.fill();
+        // spots
+        ctx.fillStyle = COLORS.white;
+        ctx.fillRect(m.x+10, m.y+6, 4, 4);
+        ctx.fillRect(m.x+18, m.y+4, 4, 4);
+      }
+
+      // player
+      ctx.fillStyle = COLORS.player;
+      ctx.fillRect(player.x, player.y, player.w, player.h);
+      // eye
+      ctx.fillStyle = COLORS.white;
+      ctx.fillRect(player.x + player.w - 10, player.y + 6, 5, 5);
+      // hat band
+      ctx.fillStyle = '#800000';
+      ctx.fillRect(player.x - 2, player.y - 5, player.w + 4, 10);
+
+      // subtle screen vignette for style
+      const g = ctx.createLinearGradient(0,0,0,H);
+      g.addColorStop(0,'rgba(0,0,0,0.12)');
+      g.addColorStop(1,'rgba(0,0,0,0.22)');
+      ctx.fillStyle = g;
+      ctx.fillRect(0,0,W,H);
+    }
+
+    // start loop
+    setHUD();
+    loop();
+  </script>
+</body>
+</html>
